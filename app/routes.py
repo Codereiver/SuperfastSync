@@ -165,28 +165,30 @@ def download_file(filename):
         synthetic_file = get_synthetic_file(filename)
         file_size = synthetic_file.size_bytes
 
-        # Create streaming response with synthetic data
-        def generate_with_timing():
-            timer = TransferTimer()
-            timer.__enter__()
+        # Start timing
+        start_time = TransferTimer()
+        start_time.__enter__()
 
+        # Create streaming response with synthetic data
+        def generate():
             # Generate and yield the synthetic data
             for chunk in create_synthetic_file_stream(filename):
                 yield chunk
 
-            # Record benchmark after streaming completes
-            timer.__exit__(None, None, None)
-            tracker.record_transfer(
-                operation="download",
-                filename=filename,
-                file_size=file_size,
-                duration=timer.duration,
-                client_ip=client_ip,
-            )
-
-        response = Response(generate_with_timing(), mimetype="application/octet-stream")
+        response = Response(generate(), mimetype="application/octet-stream")
         response.headers["Content-Disposition"] = f"attachment; filename={filename}"
         response.headers["Content-Length"] = str(file_size)
+
+        # Record benchmark (approximate timing since we can't track actual download completion)
+        start_time.__exit__(None, None, None)
+        tracker.record_transfer(
+            operation="download",
+            filename=filename,
+            file_size=file_size,
+            duration=start_time.duration,
+            client_ip=client_ip,
+        )
+
         return response
 
     # Handle real file download
