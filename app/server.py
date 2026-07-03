@@ -6,11 +6,22 @@ from .routes import bp
 
 def create_app():
     """Create and configure the Flask application."""
+    import os
+    import tempfile
+    from pathlib import Path
+
     app = Flask(__name__)
 
     # Configuration
     app.config["MAX_CONTENT_LENGTH"] = None  # No file size limit
     app.config["SECRET_KEY"] = "dev-secret-key-change-in-production"
+
+    # Use a custom temp directory for uploads instead of /tmp
+    # This avoids disk quota issues on tmpfs filesystems
+    upload_temp_dir = Path("upload_temp").absolute()
+    upload_temp_dir.mkdir(exist_ok=True)
+    tempfile.tempdir = str(upload_temp_dir)
+    os.environ["TMPDIR"] = str(upload_temp_dir)
 
     # Register blueprint
     app.register_blueprint(bp)
