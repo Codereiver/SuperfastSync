@@ -103,6 +103,8 @@ def index():
 @bp.route("/upload", methods=["POST"])
 def upload_file():
     """Handle file upload."""
+    import sys
+
     if "file" not in request.files:
         return jsonify({"error": "No file part"}), 400
 
@@ -123,31 +125,43 @@ def upload_file():
     file_path = STORAGE_DIR / filename
     client_ip = get_client_ip()
 
-    # Save file and time the operation
-    with TransferTimer() as timer:
-        file.save(file_path)
+    try:
+        # Save file and time the operation
+        with TransferTimer() as timer:
+            file.save(file_path)
 
-    # Get file size
-    file_size = file_path.stat().st_size
+        # Get file size
+        file_size = file_path.stat().st_size
 
-    # Record benchmark
-    benchmark = tracker.record_transfer(
-        operation="upload",
-        filename=filename,
-        file_size=file_size,
-        duration=timer.duration,
-        client_ip=client_ip,
-    )
+        # Debug logging
+        print(f"[UPLOAD] File saved: {file_path}, size: {file_size}", file=sys.stderr)
+        print(f"[UPLOAD] Tracker data file: {tracker.data_file}", file=sys.stderr)
 
-    return jsonify(
-        {
-            "success": True,
-            "filename": filename,
-            "size": file_size,
-            "duration": timer.duration,
-            "speed_mbps": benchmark["avg_speed_mbps"],
-        }
-    )
+        # Record benchmark
+        benchmark = tracker.record_transfer(
+            operation="upload",
+            filename=filename,
+            file_size=file_size,
+            duration=timer.duration,
+            client_ip=client_ip,
+        )
+
+        print(f"[UPLOAD] Benchmark recorded: {benchmark}", file=sys.stderr)
+
+        return jsonify(
+            {
+                "success": True,
+                "filename": filename,
+                "size": file_size,
+                "duration": timer.duration,
+                "speed_mbps": benchmark["avg_speed_mbps"],
+            }
+        )
+    except Exception as e:
+        print(f"[UPLOAD ERROR] {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 @bp.route("/download/<filename>")
