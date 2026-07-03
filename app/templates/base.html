@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SuperfastSync{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h1>SuperfastSync</h1>
+                <p class="tagline">File Server Benchmarking</p>
+            </div>
+            <div class="nav-links">
+                <a href="{{ url_for('main.index') }}" class="nav-link">Files</a>
+                <a href="{{ url_for('main.dashboard') }}" class="nav-link">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>SuperfastSync &copy; 2026 | Apache 2.0 License</p>
+        </div>
+    </footer>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

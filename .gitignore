@@ -219,3 +219,8 @@ __marimo__/
 
 # Custom
 .DS_Store
+.claude/
+
+# SuperfastSync specific
+storage/
+benchmarks.json

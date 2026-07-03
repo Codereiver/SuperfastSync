@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Files - SuperfastSync{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>File Manager</h2>
+    <p>Upload and download files with performance tracking</p>
+</div>
+
+<div class="upload-section">
+    <div class="upload-area" id="uploadArea">
+        <div class="upload-icon">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+        </div>
+        <h3>Drop files here or click to upload</h3>
+        <p class="upload-hint">Any file type, any size</p>
+        <input type="file" id="fileInput" multiple hidden>
+    </div>
+    <div id="uploadStatus" class="upload-status"></div>
+</div>
+
+<div class="files-section">
+    <div class="section-header">
+        <h3>Files ({{ files|length }})</h3>
+    </div>
+
+    {% if files %}
+    <div class="files-grid">
+        {% for file in files %}
+        <div class="file-card" data-filename="{{ file.name }}">
+            <div class="file-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                    <polyline points="13 2 13 9 20 9"></polyline>
+                </svg>
+            </div>
+            <div class="file-info">
+                <div class="file-name" title="{{ file.name }}">{{ file.name }}</div>
+                <div class="file-meta">
+                    <span class="file-size">{{ (file.size / 1024 / 1024) | round(2) }} MB</span>
+                </div>
+            </div>
+            <div class="file-actions">
+                <a href="{{ url_for('main.download_file', filename=file.name) }}" class="btn btn-sm btn-primary" download>
+                    Download
+                </a>
+                <button class="btn btn-sm btn-danger delete-btn" data-filename="{{ file.name }}">
+                    Delete
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No files uploaded yet. Drop some files above to get started!</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+{% endblock %}

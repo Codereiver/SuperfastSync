@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - SuperfastSync{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Performance Dashboard</h2>
+    <p>Historical upload and download metrics</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Transfers</div>
+        <div class="stat-value">{{ benchmarks|length }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Uploads</div>
+        <div class="stat-value">{{ benchmarks|selectattr('operation', 'equalto', 'upload')|list|length }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Downloads</div>
+        <div class="stat-value">{{ benchmarks|selectattr('operation', 'equalto', 'download')|list|length }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Avg Speed</div>
+        <div class="stat-value">
+            {% if benchmarks %}
+                {{ ((benchmarks|map(attribute='avg_speed_mbps')|sum) / benchmarks|length)|round(2) }} Mbps
+            {% else %}
+                0 Mbps
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="benchmarks-section">
+    <div class="section-header">
+        <h3>Recent Transfers</h3>
+    </div>
+
+    {% if benchmarks %}
+    <div class="table-container">
+        <table class="benchmarks-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Operation</th>
+                    <th>Filename</th>
+                    <th>Size</th>
+                    <th>Duration</th>
+                    <th>Speed</th>
+                    <th>Client IP</th>
+                    <th>Reverse DNS</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for benchmark in benchmarks|reverse %}
+                <tr>
+                    <td class="timestamp">{{ benchmark.timestamp[:19] }}</td>
+                    <td>
+                        <span class="badge badge-{{ 'success' if benchmark.operation == 'upload' else 'info' }}">
+                            {{ benchmark.operation|capitalize }}
+                        </span>
+                    </td>
+                    <td class="filename" title="{{ benchmark.filename }}">{{ benchmark.filename }}</td>
+                    <td>{{ (benchmark.file_size_bytes / 1024 / 1024)|round(2) }} MB</td>
+                    <td>{{ benchmark.duration_seconds }}s</td>
+                    <td class="speed">{{ benchmark.avg_speed_mbps }} Mbps</td>
+                    <td class="ip">{{ benchmark.client_ip }}</td>
+                    <td class="dns">{{ benchmark.reverse_dns or 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No transfers recorded yet. Upload or download some files to see metrics here!</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
