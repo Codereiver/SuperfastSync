@@ -109,9 +109,9 @@ main {
 }
 
 .upload-area {
-    border: 3px dashed var(--border);
+    border: 2px dashed var(--border);
     border-radius: 8px;
-    padding: 3rem 2rem;
+    padding: 1.5rem 2rem;
     text-align: center;
     cursor: pointer;
     transition: all 0.3s;
@@ -125,12 +125,18 @@ main {
 
 .upload-icon {
     color: var(--gray);
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.upload-icon svg {
+    width: 48px;
+    height: 48px;
 }
 
 .upload-area h3 {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
     color: var(--dark);
+    font-size: 1.125rem;
 }
 
 .upload-hint {
