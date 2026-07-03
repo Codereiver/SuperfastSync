@@ -88,15 +88,19 @@ main {
 
 .page-header {
     margin-bottom: 2rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
 }
 
 .page-header h2 {
     font-size: 2rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0;
 }
 
 .page-header p {
     color: var(--gray);
+    margin: 0;
 }
 
 /* Upload Section */
