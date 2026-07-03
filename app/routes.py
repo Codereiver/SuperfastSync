@@ -9,10 +9,17 @@ from flask import (
     send_from_directory,
     jsonify,
     abort,
+    Response,
 )
 from werkzeug.utils import secure_filename
 
 from .benchmarks import BenchmarkTracker, TransferTimer
+from .synthetic import (
+    SYNTHETIC_FILES,
+    is_synthetic_file,
+    get_synthetic_file,
+    create_synthetic_file_stream,
+)
 
 # Create blueprint
 bp = Blueprint("main", __name__)
@@ -62,8 +69,19 @@ def is_safe_path(filename: str) -> bool:
 @bp.route("/")
 def index():
     """Main page - file browser and upload interface."""
-    # List all files in storage directory
+    # Add synthetic test files first
     files = []
+    for synthetic_file in SYNTHETIC_FILES:
+        files.append(
+            {
+                "name": synthetic_file.name,
+                "size": synthetic_file.size_bytes,
+                "modified": 0,  # Always at the top
+                "synthetic": True,
+            }
+        )
+
+    # List all real files in storage directory
     for file_path in STORAGE_DIR.iterdir():
         if file_path.is_file():
             stat = file_path.stat()
@@ -72,11 +90,12 @@ def index():
                     "name": file_path.name,
                     "size": stat.st_size,
                     "modified": stat.st_mtime,
+                    "synthetic": False,
                 }
             )
 
-    # Sort by modification time (newest first)
-    files.sort(key=lambda x: x["modified"], reverse=True)
+    # Sort: synthetic files first, then by modification time
+    files.sort(key=lambda x: (not x.get("synthetic", False), -x["modified"]))
 
     return render_template("index.html", files=files)
 
@@ -133,12 +152,44 @@ def upload_file():
 
 @bp.route("/download/<filename>")
 def download_file(filename):
-    """Handle file download."""
+    """Handle file download (supports both real and synthetic files)."""
     # Secure the filename
     filename = secure_filename(filename)
     if not filename:
         abort(404)
 
+    client_ip = get_client_ip()
+
+    # Check if it's a synthetic file
+    if is_synthetic_file(filename):
+        synthetic_file = get_synthetic_file(filename)
+        file_size = synthetic_file.size_bytes
+
+        # Create streaming response with synthetic data
+        def generate_with_timing():
+            timer = TransferTimer()
+            timer.__enter__()
+
+            # Generate and yield the synthetic data
+            for chunk in create_synthetic_file_stream(filename):
+                yield chunk
+
+            # Record benchmark after streaming completes
+            timer.__exit__(None, None, None)
+            tracker.record_transfer(
+                operation="download",
+                filename=filename,
+                file_size=file_size,
+                duration=timer.duration,
+                client_ip=client_ip,
+            )
+
+        response = Response(generate_with_timing(), mimetype="application/octet-stream")
+        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+        response.headers["Content-Length"] = str(file_size)
+        return response
+
+    # Handle real file download
     # Ensure path safety
     if not is_safe_path(filename):
         abort(404)
@@ -148,7 +199,6 @@ def download_file(filename):
     if not file_path.exists() or not file_path.is_file():
         abort(404)
 
-    client_ip = get_client_ip()
     file_size = file_path.stat().st_size
 
     # Note: We record the benchmark before sending to capture timing
@@ -176,11 +226,15 @@ def download_file(filename):
 
 @bp.route("/delete/<filename>", methods=["DELETE"])
 def delete_file(filename):
-    """Handle file deletion."""
+    """Handle file deletion (synthetic files cannot be deleted)."""
     # Secure the filename
     filename = secure_filename(filename)
     if not filename:
         return jsonify({"error": "Invalid filename"}), 400
+
+    # Prevent deletion of synthetic files
+    if is_synthetic_file(filename):
+        return jsonify({"error": "Cannot delete synthetic test files"}), 403
 
     # Ensure path safety
     if not is_safe_path(filename):

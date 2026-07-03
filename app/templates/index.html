@@ -32,15 +32,28 @@
     {% if files %}
     <div class="files-grid">
         {% for file in files %}
-        <div class="file-card" data-filename="{{ file.name }}">
+        <div class="file-card {% if file.synthetic %}file-card-synthetic{% endif %}" data-filename="{{ file.name }}">
             <div class="file-icon">
+                {% if file.synthetic %}
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                {% else %}
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
                     <polyline points="13 2 13 9 20 9"></polyline>
                 </svg>
+                {% endif %}
             </div>
             <div class="file-info">
-                <div class="file-name" title="{{ file.name }}">{{ file.name }}</div>
+                <div class="file-name" title="{{ file.name }}">
+                    {{ file.name }}
+                    {% if file.synthetic %}
+                    <span class="badge badge-synthetic">Test File</span>
+                    {% endif %}
+                </div>
                 <div class="file-meta">
                     <span class="file-size">{{ (file.size / 1024 / 1024) | round(2) }} MB</span>
                 </div>
@@ -49,9 +62,11 @@
                 <a href="{{ url_for('main.download_file', filename=file.name) }}" class="btn btn-sm btn-primary" download>
                     Download
                 </a>
+                {% if not file.synthetic %}
                 <button class="btn btn-sm btn-danger delete-btn" data-filename="{{ file.name }}">
                     Delete
                 </button>
+                {% endif %}
             </div>
         </div>
         {% endfor %}

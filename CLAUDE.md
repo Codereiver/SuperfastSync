@@ -93,6 +93,7 @@ uv run python -m app.server
 - **Browse Files**: View all files in storage directory with a clean, modern UI
 - **Upload Files**: Drag-and-drop or click to upload (no type/size restrictions)
 - **Download Files**: Download any stored file
+- **Synthetic Test Files**: Pre-configured test files (100MB, 500MB, 1GB) generated on-the-fly for download benchmarking without consuming disk space
 
 ### Benchmarking & Metrics
 - **Max Transfer Speed**: Peak upload/download speed
@@ -128,3 +129,18 @@ uv run python -m app.server
 - Track transfer speeds using start/end timestamps and file sizes
 - Use Python's `socket` module for reverse DNS
 - Consider using a simple JSON file or SQLite for storing benchmark history
+
+### Synthetic Test Files
+The application includes synthetic test files that appear in the file list but are generated on-the-fly:
+- **test-100mb.bin** - 100 MB file for download speed testing
+- **test-500mb.bin** - 500 MB file for download speed testing
+- **test-1gb.bin** - 1 GB file for download speed testing
+
+These files:
+- Do not consume disk space
+- Are generated using a repeating byte pattern during download
+- Cannot be deleted (protected in UI and API)
+- Are visually distinguished with a blue gradient background and "Test File" badge
+- Use streaming responses for efficient memory usage
+
+Implementation in `app/synthetic.py` - modify `SYNTHETIC_FILES` list to add/remove/change test files.

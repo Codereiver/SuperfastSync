@@ -61,17 +61,20 @@ Once inside the VM, follow the Ubuntu deployment instructions:
 # Update packages
 sudo apt update && sudo apt upgrade -y
 
-# Install Python 3.11
-sudo apt install python3.11 python3.11-venv -y
+# Check available Python version (Ubuntu 22.04 has Python 3.10+)
+python3 --version
 
-# Install uv
+# Install Python and pip (if needed)
+sudo apt install python3 python3-pip python3-venv -y
+
+# Install uv (it will use the system Python)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.cargo/bin:$PATH"
 
 # Navigate to project (mounted from your Mac)
 cd /home/ubuntu/SuperfastSync
 
-# Install dependencies
+# Install dependencies (uv will handle Python version requirements)
 uv sync
 
 # Create storage directory
@@ -140,11 +143,20 @@ sudo yum update -y  # For Amazon Linux
 # OR
 sudo apt update && sudo apt upgrade -y  # For Ubuntu
 
-# Install Python 3.10+ (if not already installed)
-# Amazon Linux 2023 comes with Python 3.9+, but let's ensure we have 3.10+
-sudo yum install python3.11 -y  # For Amazon Linux
-# OR
-sudo apt install python3.11 python3.11-venv -y  # For Ubuntu
+# Check Python version (needs 3.10+)
+python3 --version
+
+# Install Python and dependencies
+# For Amazon Linux 2023:
+sudo yum install python3 python3-pip -y
+# OR for Ubuntu 22.04+ (comes with Python 3.10):
+sudo apt install python3 python3-pip python3-venv -y
+
+# If you need Python 3.11+ specifically (optional):
+# For Ubuntu, you may need to add deadsnakes PPA:
+# sudo add-apt-repository ppa:deadsnakes/ppa -y
+# sudo apt update
+# sudo apt install python3.11 python3.11-venv -y
 
 # Install uv package manager
 curl -LsSf https://astral.sh/uv/install.sh | sh
