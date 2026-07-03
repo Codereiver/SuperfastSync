@@ -281,3 +281,13 @@ def api_benchmarks():
     limit = request.args.get("limit", default=50, type=int)
     benchmarks = tracker.get_recent_benchmarks(limit)
     return jsonify(benchmarks)
+
+
+@bp.route("/clear-benchmarks", methods=["POST"])
+def clear_benchmarks():
+    """Clear all benchmark data."""
+    try:
+        tracker.data_file.write_text("[]")
+        return jsonify({"success": True, "message": "All benchmarks cleared"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

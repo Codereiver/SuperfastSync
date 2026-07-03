@@ -36,6 +36,9 @@
 <div class="benchmarks-section">
     <div class="section-header">
         <h3>Recent Transfers</h3>
+        {% if benchmarks %}
+        <button id="clearButton" class="btn btn-danger btn-sm">Clear All Results</button>
+        {% endif %}
     </div>
 
     {% if benchmarks %}
@@ -80,3 +83,35 @@
     {% endif %}
 </div>
 {% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const clearButton = document.getElementById('clearButton');
+
+    if (clearButton) {
+        clearButton.addEventListener('click', function() {
+            if (!confirm('Are you sure you want to clear all benchmark results? This cannot be undone.')) {
+                return;
+            }
+
+            fetch('/clear-benchmarks', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert('Error clearing benchmarks: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                alert('Error clearing benchmarks: ' + error);
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
+

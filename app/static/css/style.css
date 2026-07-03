@@ -217,10 +217,14 @@ main {
     margin-bottom: 1.5rem;
     border-bottom: 2px solid var(--light-gray);
     padding-bottom: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .section-header h3 {
     font-size: 1.25rem;
+    margin: 0;
 }
 
 .files-grid {
