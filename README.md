@@ -11,20 +11,39 @@ A simple file server benchmarking application for testing upload/download perfor
 - 🎨 Modern, responsive web UI with drag-and-drop
 - 🔒 Authentication to prevent unauthorized access
 
-## Authentication
+## Authentication & Security
 
-The application requires login to access all features. Default credentials:
+The application requires login to access all features. Default credentials (development only):
 - **Username:** `admin`
 - **Password:** `admin`
 
-To customize credentials, set environment variables:
+### Security Configuration
+
+**CRITICAL:** Before deploying to production, you MUST set these environment variables:
+
 ```bash
+# Generate a secure secret key
+export SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
+
+# Set strong credentials
 export AUTH_USERNAME=your_username
-export AUTH_PASSWORD=your_password
+export AUTH_PASSWORD=your_secure_password
+
+# Disable debug mode (REQUIRED for production)
+export DEBUG=false
+
+# Run the application
 uv run python -m app.server
 ```
 
-**IMPORTANT:** Change the default credentials in production deployments!
+**Security Features:**
+- Session-based authentication with 24-hour timeout
+- Secure session cookies (HttpOnly, SameSite)
+- Constant-time credential comparison (prevents timing attacks)
+- DNS lookup timeout protection
+- Path traversal protection for file operations
+
+See [SECURITY.md](SECURITY.md) for complete security documentation.
 
 ## Quick Start (Local Development)
 
@@ -221,8 +240,10 @@ Type=simple
 User=ec2-user
 WorkingDirectory=/home/ec2-user/SuperfastSync
 Environment="PATH=/home/ec2-user/.cargo/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="SECRET_KEY=your_64_char_random_hex_string_here"
 Environment="AUTH_USERNAME=your_username"
 Environment="AUTH_PASSWORD=your_secure_password"
+Environment="DEBUG=false"
 ExecStart=/home/ec2-user/.cargo/bin/uv run python -m app.server
 Restart=always
 
@@ -230,7 +251,10 @@ Restart=always
 WantedBy=multi-user.target
 ```
 
-**Note:** Replace `your_username` and `your_secure_password` with your desired credentials.
+**IMPORTANT:** Generate and set:
+- `SECRET_KEY`: Run `python3 -c 'import secrets; print(secrets.token_hex(32))'`
+- `AUTH_USERNAME` and `AUTH_PASSWORD`: Your secure credentials
+- `DEBUG`: Must be `false` in production
 
 ```bash
 # Enable and start the service

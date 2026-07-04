@@ -32,12 +32,25 @@ class BenchmarkTracker:
         self.data_file.write_text(json.dumps(data, indent=2))
 
     def reverse_dns_lookup(self, ip: str) -> Optional[str]:
-        """Perform reverse DNS lookup for an IP address."""
+        """
+        Perform reverse DNS lookup for an IP address with timeout.
+
+        Args:
+            ip: IP address to lookup
+
+        Returns:
+            Hostname if found, None otherwise
+        """
         try:
+            # Set socket timeout to prevent hanging on slow/malicious DNS servers
+            socket.setdefaulttimeout(2.0)
             hostname, _, _ = socket.gethostbyaddr(ip)
             return hostname
-        except (socket.herror, socket.gaierror):
+        except (socket.herror, socket.gaierror, socket.timeout):
             return None
+        finally:
+            # Reset socket timeout to default
+            socket.setdefaulttimeout(None)
 
     def as_lookup(self, ip: str) -> Optional[str]:
         """

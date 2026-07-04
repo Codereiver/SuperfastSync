@@ -85,14 +85,21 @@ def is_safe_path(filename: str) -> bool:
 def login():
     """Handle user login."""
     if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
+        import secrets
+
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
 
         auth_username = current_app.config.get("AUTH_USERNAME")
         auth_password = current_app.config.get("AUTH_PASSWORD")
 
-        if username == auth_username and password == auth_password:
+        # Use constant-time comparison to prevent timing attacks
+        username_valid = secrets.compare_digest(username, auth_username)
+        password_valid = secrets.compare_digest(password, auth_password)
+
+        if username_valid and password_valid:
             session["logged_in"] = True
+            session.permanent = True  # Respect PERMANENT_SESSION_LIFETIME
             return redirect(url_for("main.index"))
         else:
             return render_template("login.html", error="Invalid username or password")
