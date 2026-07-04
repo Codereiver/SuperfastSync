@@ -185,17 +185,31 @@ def download_file(filename):
             print(f"[DOWNLOAD] Synthetic file: {filename}, size: {file_size}", file=sys.stderr)
             print(f"[DOWNLOAD] Client IP: {client_ip}", file=sys.stderr)
 
-            # Start timing
-            start_time = TransferTimer()
-            start_time.__enter__()
+            # Create streaming response with synthetic data and track timing
+            def generate_with_tracking():
+                import time
+                start = time.time()
 
-            # Create streaming response with synthetic data
-            def generate():
                 # Generate and yield the synthetic data
                 for chunk in create_synthetic_file_stream(filename):
                     yield chunk
 
-            response = Response(generate(), mimetype="application/octet-stream")
+                # After all data is sent, record the benchmark
+                duration = time.time() - start
+                print(f"[DOWNLOAD] Transfer completed in {duration:.3f}s", file=sys.stderr)
+                print(f"[DOWNLOAD] Tracker data file: {tracker.data_file}", file=sys.stderr)
+
+                benchmark = tracker.record_transfer(
+                    operation="download",
+                    filename=filename,
+                    file_size=file_size,
+                    duration=duration,
+                    client_ip=client_ip,
+                )
+
+                print(f"[DOWNLOAD] Benchmark recorded: {benchmark}", file=sys.stderr)
+
+            response = Response(generate_with_tracking(), mimetype="application/octet-stream")
             response.headers["Content-Disposition"] = f"attachment; filename={filename}"
             response.headers["Content-Length"] = str(file_size)
 
@@ -203,21 +217,6 @@ def download_file(filename):
             response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
-
-            # Record benchmark (approximate timing since we can't track actual download completion)
-            start_time.__exit__(None, None, None)
-
-            print(f"[DOWNLOAD] Tracker data file: {tracker.data_file}", file=sys.stderr)
-
-            benchmark = tracker.record_transfer(
-                operation="download",
-                filename=filename,
-                file_size=file_size,
-                duration=start_time.duration,
-                client_ip=client_ip,
-            )
-
-            print(f"[DOWNLOAD] Benchmark recorded: {benchmark}", file=sys.stderr)
 
             return response
 
@@ -236,35 +235,41 @@ def download_file(filename):
         print(f"[DOWNLOAD] Real file: {file_path}, size: {file_size}", file=sys.stderr)
         print(f"[DOWNLOAD] Client IP: {client_ip}", file=sys.stderr)
 
-        # Note: We record the benchmark before sending to capture timing
-        # In a production app, you might want to stream and time more accurately
-        start_time = TransferTimer()
-        start_time.__enter__()
+        # Stream file with timing
+        def generate_file_with_tracking():
+            import time
+            start = time.time()
 
-        # Send file
-        response = send_from_directory(
-            STORAGE_DIR, filename, as_attachment=True, download_name=filename
-        )
+            with open(file_path, 'rb') as f:
+                while True:
+                    chunk = f.read(64 * 1024)  # 64KB chunks
+                    if not chunk:
+                        break
+                    yield chunk
+
+            # After all data is sent, record the benchmark
+            duration = time.time() - start
+            print(f"[DOWNLOAD] Transfer completed in {duration:.3f}s", file=sys.stderr)
+            print(f"[DOWNLOAD] Tracker data file: {tracker.data_file}", file=sys.stderr)
+
+            benchmark = tracker.record_transfer(
+                operation="download",
+                filename=filename,
+                file_size=file_size,
+                duration=duration,
+                client_ip=client_ip,
+            )
+
+            print(f"[DOWNLOAD] Benchmark recorded: {benchmark}", file=sys.stderr)
+
+        response = Response(generate_file_with_tracking(), mimetype="application/octet-stream")
+        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+        response.headers["Content-Length"] = str(file_size)
 
         # Prevent browser caching to ensure accurate benchmarking
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
-
-        # Record benchmark (approximate timing)
-        start_time.__exit__(None, None, None)
-
-        print(f"[DOWNLOAD] Tracker data file: {tracker.data_file}", file=sys.stderr)
-
-        benchmark = tracker.record_transfer(
-            operation="download",
-            filename=filename,
-            file_size=file_size,
-            duration=start_time.duration,
-            client_ip=client_ip,
-        )
-
-        print(f"[DOWNLOAD] Benchmark recorded: {benchmark}", file=sys.stderr)
 
         return response
     except Exception as e:
