@@ -199,6 +199,11 @@ def download_file(filename):
             response.headers["Content-Disposition"] = f"attachment; filename={filename}"
             response.headers["Content-Length"] = str(file_size)
 
+            # Prevent browser caching to ensure accurate benchmarking
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+
             # Record benchmark (approximate timing since we can't track actual download completion)
             start_time.__exit__(None, None, None)
 
@@ -240,6 +245,11 @@ def download_file(filename):
         response = send_from_directory(
             STORAGE_DIR, filename, as_attachment=True, download_name=filename
         )
+
+        # Prevent browser caching to ensure accurate benchmarking
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
 
         # Record benchmark (approximate timing)
         start_time.__exit__(None, None, None)
