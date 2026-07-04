@@ -224,3 +224,4 @@ __marimo__/
 # SuperfastSync specific
 storage/
 benchmarks.json
+upload_temp/
