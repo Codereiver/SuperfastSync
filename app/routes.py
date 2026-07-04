@@ -167,6 +167,8 @@ def upload_file():
 @bp.route("/download/<filename>")
 def download_file(filename):
     """Handle file download (supports both real and synthetic files)."""
+    import sys
+
     # Secure the filename
     filename = secure_filename(filename)
     if not filename:
@@ -174,28 +176,77 @@ def download_file(filename):
 
     client_ip = get_client_ip()
 
-    # Check if it's a synthetic file
-    if is_synthetic_file(filename):
-        synthetic_file = get_synthetic_file(filename)
-        file_size = synthetic_file.size_bytes
+    try:
+        # Check if it's a synthetic file
+        if is_synthetic_file(filename):
+            synthetic_file = get_synthetic_file(filename)
+            file_size = synthetic_file.size_bytes
 
-        # Start timing
+            print(f"[DOWNLOAD] Synthetic file: {filename}, size: {file_size}", file=sys.stderr)
+            print(f"[DOWNLOAD] Client IP: {client_ip}", file=sys.stderr)
+
+            # Start timing
+            start_time = TransferTimer()
+            start_time.__enter__()
+
+            # Create streaming response with synthetic data
+            def generate():
+                # Generate and yield the synthetic data
+                for chunk in create_synthetic_file_stream(filename):
+                    yield chunk
+
+            response = Response(generate(), mimetype="application/octet-stream")
+            response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+            response.headers["Content-Length"] = str(file_size)
+
+            # Record benchmark (approximate timing since we can't track actual download completion)
+            start_time.__exit__(None, None, None)
+
+            print(f"[DOWNLOAD] Tracker data file: {tracker.data_file}", file=sys.stderr)
+
+            benchmark = tracker.record_transfer(
+                operation="download",
+                filename=filename,
+                file_size=file_size,
+                duration=start_time.duration,
+                client_ip=client_ip,
+            )
+
+            print(f"[DOWNLOAD] Benchmark recorded: {benchmark}", file=sys.stderr)
+
+            return response
+
+        # Handle real file download
+        # Ensure path safety
+        if not is_safe_path(filename):
+            abort(404)
+
+        file_path = STORAGE_DIR / filename
+
+        if not file_path.exists() or not file_path.is_file():
+            abort(404)
+
+        file_size = file_path.stat().st_size
+
+        print(f"[DOWNLOAD] Real file: {file_path}, size: {file_size}", file=sys.stderr)
+        print(f"[DOWNLOAD] Client IP: {client_ip}", file=sys.stderr)
+
+        # Note: We record the benchmark before sending to capture timing
+        # In a production app, you might want to stream and time more accurately
         start_time = TransferTimer()
         start_time.__enter__()
 
-        # Create streaming response with synthetic data
-        def generate():
-            # Generate and yield the synthetic data
-            for chunk in create_synthetic_file_stream(filename):
-                yield chunk
+        # Send file
+        response = send_from_directory(
+            STORAGE_DIR, filename, as_attachment=True, download_name=filename
+        )
 
-        response = Response(generate(), mimetype="application/octet-stream")
-        response.headers["Content-Disposition"] = f"attachment; filename={filename}"
-        response.headers["Content-Length"] = str(file_size)
-
-        # Record benchmark (approximate timing since we can't track actual download completion)
+        # Record benchmark (approximate timing)
         start_time.__exit__(None, None, None)
-        tracker.record_transfer(
+
+        print(f"[DOWNLOAD] Tracker data file: {tracker.data_file}", file=sys.stderr)
+
+        benchmark = tracker.record_transfer(
             operation="download",
             filename=filename,
             file_size=file_size,
@@ -203,41 +254,14 @@ def download_file(filename):
             client_ip=client_ip,
         )
 
+        print(f"[DOWNLOAD] Benchmark recorded: {benchmark}", file=sys.stderr)
+
         return response
-
-    # Handle real file download
-    # Ensure path safety
-    if not is_safe_path(filename):
-        abort(404)
-
-    file_path = STORAGE_DIR / filename
-
-    if not file_path.exists() or not file_path.is_file():
-        abort(404)
-
-    file_size = file_path.stat().st_size
-
-    # Note: We record the benchmark before sending to capture timing
-    # In a production app, you might want to stream and time more accurately
-    start_time = TransferTimer()
-    start_time.__enter__()
-
-    # Send file
-    response = send_from_directory(
-        STORAGE_DIR, filename, as_attachment=True, download_name=filename
-    )
-
-    # Record benchmark (approximate timing)
-    start_time.__exit__(None, None, None)
-    tracker.record_transfer(
-        operation="download",
-        filename=filename,
-        file_size=file_size,
-        duration=start_time.duration,
-        client_ip=client_ip,
-    )
-
-    return response
+    except Exception as e:
+        print(f"[DOWNLOAD ERROR] {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        abort(500)
 
 
 @bp.route("/delete/<filename>", methods=["DELETE"])
