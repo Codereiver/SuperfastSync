@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+from functools import wraps
 from flask import (
     Blueprint,
     render_template,
@@ -10,6 +11,10 @@ from flask import (
     jsonify,
     abort,
     Response,
+    session,
+    redirect,
+    url_for,
+    current_app,
 )
 from werkzeug.utils import secure_filename
 
@@ -30,6 +35,16 @@ STORAGE_DIR.mkdir(exist_ok=True)
 
 # Initialize benchmark tracker
 tracker = BenchmarkTracker()
+
+
+def login_required(f):
+    """Decorator to require authentication for routes."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("logged_in"):
+            return redirect(url_for("main.login"))
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 def get_client_ip() -> str:
@@ -66,7 +81,34 @@ def is_safe_path(filename: str) -> bool:
     return target_path.parent == STORAGE_DIR
 
 
+@bp.route("/login", methods=["GET", "POST"])
+def login():
+    """Handle user login."""
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        auth_username = current_app.config.get("AUTH_USERNAME")
+        auth_password = current_app.config.get("AUTH_PASSWORD")
+
+        if username == auth_username and password == auth_password:
+            session["logged_in"] = True
+            return redirect(url_for("main.index"))
+        else:
+            return render_template("login.html", error="Invalid username or password")
+
+    return render_template("login.html")
+
+
+@bp.route("/logout")
+def logout():
+    """Handle user logout."""
+    session.pop("logged_in", None)
+    return redirect(url_for("main.login"))
+
+
 @bp.route("/")
+@login_required
 def index():
     """Main page - file browser and upload interface."""
     # Add synthetic test files first
@@ -101,6 +143,7 @@ def index():
 
 
 @bp.route("/upload", methods=["POST"])
+@login_required
 def upload_file():
     """Handle file upload."""
     import sys
@@ -165,6 +208,7 @@ def upload_file():
 
 
 @bp.route("/download/<filename>")
+@login_required
 def download_file(filename):
     """Handle file download (supports both real and synthetic files)."""
     import sys
@@ -280,6 +324,7 @@ def download_file(filename):
 
 
 @bp.route("/delete/<filename>", methods=["DELETE"])
+@login_required
 def delete_file(filename):
     """Handle file deletion (synthetic files cannot be deleted)."""
     # Secure the filename
@@ -308,6 +353,7 @@ def delete_file(filename):
 
 
 @bp.route("/dashboard")
+@login_required
 def dashboard():
     """Dashboard page - view benchmark history."""
     benchmarks = tracker.get_all_benchmarks()
@@ -315,6 +361,7 @@ def dashboard():
 
 
 @bp.route("/api/benchmarks")
+@login_required
 def api_benchmarks():
     """API endpoint for benchmark data."""
     limit = request.args.get("limit", default=50, type=int)
@@ -323,6 +370,7 @@ def api_benchmarks():
 
 
 @bp.route("/clear-benchmarks", methods=["POST"])
+@login_required
 def clear_benchmarks():
     """Clear all benchmark data."""
     try:

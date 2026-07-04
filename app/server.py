@@ -14,7 +14,11 @@ def create_app():
 
     # Configuration
     app.config["MAX_CONTENT_LENGTH"] = None  # No file size limit
-    app.config["SECRET_KEY"] = "dev-secret-key-change-in-production"
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
+
+    # Authentication configuration
+    app.config["AUTH_USERNAME"] = os.environ.get("AUTH_USERNAME", "admin")
+    app.config["AUTH_PASSWORD"] = os.environ.get("AUTH_PASSWORD", "admin")
 
     # Use a custom temp directory for uploads instead of /tmp
     # This avoids disk quota issues on tmpfs filesystems

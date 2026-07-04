@@ -9,6 +9,22 @@ A simple file server benchmarking application for testing upload/download perfor
 - 🌐 Client tracking (IP, reverse DNS, AS lookup)
 - 📈 Historical dashboard for metrics
 - 🎨 Modern, responsive web UI with drag-and-drop
+- 🔒 Authentication to prevent unauthorized access
+
+## Authentication
+
+The application requires login to access all features. Default credentials:
+- **Username:** `admin`
+- **Password:** `admin`
+
+To customize credentials, set environment variables:
+```bash
+export AUTH_USERNAME=your_username
+export AUTH_PASSWORD=your_password
+uv run python -m app.server
+```
+
+**IMPORTANT:** Change the default credentials in production deployments!
 
 ## Quick Start (Local Development)
 
@@ -205,12 +221,16 @@ Type=simple
 User=ec2-user
 WorkingDirectory=/home/ec2-user/SuperfastSync
 Environment="PATH=/home/ec2-user/.cargo/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="AUTH_USERNAME=your_username"
+Environment="AUTH_PASSWORD=your_secure_password"
 ExecStart=/home/ec2-user/.cargo/bin/uv run python -m app.server
 Restart=always
 
 [Install]
 WantedBy=multi-user.target
 ```
+
+**Note:** Replace `your_username` and `your_secure_password` with your desired credentials.
 
 ```bash
 # Enable and start the service

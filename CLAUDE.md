@@ -79,6 +79,7 @@ uv run python -m app.server
 - **IMPORTANT**: Application must ONLY read from and write to the `./storage/` directory
 - No access to parent directories or other filesystem locations
 - Path traversal protection required
+- **Authentication**: Session-based login required to access all application features
 
 ### Data Flow
 1. Client uploads file via drag-and-drop interface
@@ -88,6 +89,13 @@ uv run python -m app.server
 5. Dashboard displays historical benchmark data
 
 ## Key Features
+
+### Authentication
+- **Session-based login**: Prevents unauthorized access to the application
+- **Configurable credentials**: Set via environment variables
+- **Default credentials**: username=`admin`, password=`admin` (change in production!)
+- **Protected routes**: All file operations and dashboard require authentication
+- **Login page**: Clean, modern login interface with purple gradient
 
 ### File Operations
 - **Browse Files**: View all files in storage directory with a clean, modern UI
@@ -103,12 +111,14 @@ uv run python -m app.server
   - Reverse DNS lookup
   - AS (Autonomous System) lookup
 - **Dashboard**: Historical view of all benchmark data
+- **Clear function**: Remove all benchmark history
 
 ### UI/UX
 - Modern, clean interface
 - Drag-and-drop file uploads
 - Responsive design
-- Real-time upload progress (optional enhancement)
+- Real-time upload progress
+- Logout functionality in navigation
 
 ## Notes for AI Assistants
 
@@ -128,7 +138,10 @@ uv run python -m app.server
 - Implement path traversal protection (no `../` in filenames)
 - Track transfer speeds using start/end timestamps and file sizes
 - Use Python's `socket` module for reverse DNS
-- Consider using a simple JSON file or SQLite for storing benchmark history
+- Simple JSON file for storing benchmark history
+- **Authentication**: Flask sessions with `@login_required` decorator protecting routes
+- **Credentials**: Configured via `AUTH_USERNAME` and `AUTH_PASSWORD` environment variables
+- **Temp directory**: Custom `upload_temp/` directory to avoid tmpfs quota issues on VMs
 
 ### Synthetic Test Files
 The application includes synthetic test files that appear in the file list but are generated on-the-fly:
