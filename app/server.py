@@ -43,8 +43,13 @@ def create_app():
     app.config["AUTH_USERNAME"] = os.environ.get("AUTH_USERNAME", "admin")
     app.config["AUTH_PASSWORD"] = os.environ.get("AUTH_PASSWORD", "admin")
 
-    if debug_mode and (app.config["AUTH_USERNAME"] == "admin" or app.config["AUTH_PASSWORD"] == "admin"):
-        print("WARNING: Using default credentials (admin/admin) - change in production!", file=sys.stderr)
+    # Warn about default credentials
+    if app.config["AUTH_USERNAME"] == "admin" or app.config["AUTH_PASSWORD"] == "admin":
+        if debug_mode:
+            print("WARNING: Using default credentials (admin/admin) - change in production!", file=sys.stderr)
+        else:
+            print("SECURITY WARNING: Using default credentials (admin/admin) in production mode!", file=sys.stderr)
+            print("Set AUTH_USERNAME and AUTH_PASSWORD environment variables!", file=sys.stderr)
 
     # Use a custom temp directory for uploads instead of /tmp
     # This avoids disk quota issues on tmpfs filesystems

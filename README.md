@@ -178,6 +178,17 @@ sudo yum update -y  # For Amazon Linux
 # OR
 sudo apt update && sudo apt upgrade -y  # For Ubuntu
 
+# Install git (if not already installed)
+# For Amazon Linux 2023:
+sudo dnf install git -y
+# For Amazon Linux 2:
+sudo yum install git -y
+# For Ubuntu:
+sudo apt install git -y
+
+# Verify git installation
+git --version
+
 # Check Python version (needs 3.10+)
 python3 --version
 
