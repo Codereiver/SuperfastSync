@@ -86,12 +86,17 @@ def login():
     """Handle user login."""
     if request.method == "POST":
         import secrets
+        import sys
 
         username = request.form.get("username", "")
         password = request.form.get("password", "")
 
         auth_username = current_app.config.get("AUTH_USERNAME")
         auth_password = current_app.config.get("AUTH_PASSWORD")
+
+        # Get client information for logging
+        client_ip = get_client_ip()
+        user_agent = request.headers.get("User-Agent", "Unknown")
 
         # Use constant-time comparison to prevent timing attacks
         username_valid = secrets.compare_digest(username, auth_username)
@@ -100,8 +105,30 @@ def login():
         if username_valid and password_valid:
             session["logged_in"] = True
             session.permanent = True  # Respect PERMANENT_SESSION_LIFETIME
+            print(f"[LOGIN SUCCESS] User '{username}' from {client_ip}", file=sys.stderr)
             return redirect(url_for("main.index"))
         else:
+            # Detailed diagnostics for login failures
+            print(f"[LOGIN FAILED] Attempted login from {client_ip}", file=sys.stderr)
+            print(f"  Client IP: {client_ip}", file=sys.stderr)
+            print(f"  User-Agent: {user_agent}", file=sys.stderr)
+            print(f"  Submitted username: '{username}' (length: {len(username)})", file=sys.stderr)
+            print(f"  Submitted password: {'*' * len(password)} (length: {len(password)})", file=sys.stderr)
+            print(f"  Expected username: '{auth_username}' (length: {len(auth_username)})", file=sys.stderr)
+            print(f"  Expected password: {'*' * len(auth_password)} (length: {len(auth_password)})", file=sys.stderr)
+            print(f"  Username match: {username_valid}", file=sys.stderr)
+            print(f"  Password match: {password_valid}", file=sys.stderr)
+
+            # Check for common issues
+            if username != username.strip():
+                print(f"  WARNING: Username has leading/trailing whitespace!", file=sys.stderr)
+            if password != password.strip():
+                print(f"  WARNING: Password has leading/trailing whitespace!", file=sys.stderr)
+            if auth_username != auth_username.strip():
+                print(f"  WARNING: Expected username (from config) has leading/trailing whitespace!", file=sys.stderr)
+            if auth_password != auth_password.strip():
+                print(f"  WARNING: Expected password (from config) has leading/trailing whitespace!", file=sys.stderr)
+
             return render_template("login.html", error="Invalid username or password")
 
     return render_template("login.html")
