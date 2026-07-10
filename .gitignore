@@ -225,3 +225,8 @@ __marimo__/
 storage/
 benchmarks.json
 upload_temp/
+*.pem
+*.key
+*.crt
+*.csr
+test_env.py
